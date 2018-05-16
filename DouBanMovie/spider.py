@@ -19,20 +19,24 @@ def parse_one_page(html):
                          + '.*?star.*?<span.*?property="v:average">(.*?)</span>.*?<span>'
                          + '(.*?)</span>.*?quote.*?<span.*?>(.*?)</span>', re.S)
     items = re.findall(pattern, html)
-    for item in items:
-        yield {
-           'top': item[0],
-           'movie': item[2],
-           'score': item[7],
-           'sum': item[8],
-           'director': re.split('&nbsp;', item[5].strip()[4:])[0],
-           'actor': re.split('&nbsp;', item[5].strip()[4:])[3],
-           'time': re.split('&nbsp;', item[6].strip())[0],
-           'type': re.split('&nbsp;', item[6].strip())[4],
-           'country': re.split('&nbsp;', item[6].strip())[2],
-           'image': item[1]
+    try:
+        for item in items:
+            yield {
+                'top': item[0],
+                'movie': item[2],
+                'score': item[7],
+                'sum': item[8],
+                'director': re.split('&nbsp;', item[5].strip()[4:])[0],
+                'actor': re.split('&nbsp;', item[5].strip()[4:])[3],
+                'time': re.split('&nbsp;', item[6].strip())[0],
+                'type': re.split('&nbsp;', item[6].strip())[4],
+                'country': re.split('&nbsp;', item[6].strip())[2],
+                'image': item[1]
 
-        }
+            }
+    except Exception as e:
+        print(e)
+
 
 
 def write_to_file(content):
@@ -41,14 +45,16 @@ def write_to_file(content):
         f.close()
 
 
-def main():
-    url = 'https://movie.douban.com/top250'
+def main(offset):
+    url = 'https://movie.douban.com/top250?start='+str(offset)
     html = get_one_pages(url)
     for item in parse_one_page(html):
         write_to_file(item)
 
 
 if __name__ == '__main__':
-    main()
+    for i in range(25):
+        main(i*25)
+
 
 
