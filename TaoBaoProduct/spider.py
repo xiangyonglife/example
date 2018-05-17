@@ -99,7 +99,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+     main()
+    #for i in db[config.MANGO_TABLE].find():
+        #print(i)
 
 
 
