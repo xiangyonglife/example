@@ -7,8 +7,9 @@ from TouTiaoJiePai import config
 import pymongo
 from hashlib import md5
 import os
+from multiprocessing import Pool
 
-client = pymongo.MongoClient(config.MANGO_URL)
+client = pymongo.MongoClient(config.MANGO_URL, connect=False)
 db = client[config.MANGO_DB]
 headline = db[config.MANGO_TABLE]
 
@@ -79,8 +80,8 @@ def save_to_mongodb(result):
     return False
 
 
-def main():
-    html = get_page_index(0, '街拍')
+def main(offset):
+    html = get_page_index(offset, config.KEYWORD)
     for url in parse_page_index(html):
         if url:
             html = get_page_detail(url)
@@ -93,19 +94,27 @@ def download_images(url):
     try:
         response = requests.get(url)
         if response.status_code == 200:
-            return response.content
+            save_images(response.content)
+            return None
         return None
     except requests.RequestException as e:
         print('图片下载出错'+e)
 
 
 def save_images(content):
-    fielpath = {0}/{1}/{2}.format(os.getcwd(), md5(content).hexdigest, 'jpg')
-    if not os.path.exists(fielpath):
-        with open(fielpath, 'wb') as f:
+    m2 = md5()
+    m2.update(content)
+    filename = '{0}/{1}.{2}'.format(os.getcwd(), m2.hexdigest(), 'jpg')
+    if not os.path.exists(filename):
+        with open(filename, 'wb') as f:
             f.write(content)
 
 
 if __name__ == '__main__':
-    for i in headline.find():
-        print(i)
+    groups = [x*20 for x in range(config.GROUP_START, config.GROUP_END+1)]
+    pool = Pool()
+    pool.map(main, groups)
+
+# for i in headline.find():
+# print(i)
+
