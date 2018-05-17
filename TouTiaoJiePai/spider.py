@@ -5,6 +5,8 @@ import re
 from selenium import webdriver
 from TouTiaoJiePai import config
 import pymongo
+from hashlib import md5
+import os
 
 client = pymongo.MongoClient(config.MANGO_URL)
 db = client[config.MANGO_DB]
@@ -40,11 +42,10 @@ def parse_page_index(html):
 
 
 def get_page_detail(url):
-
-        browser = webdriver.Chrome()
-        browser.get(url)
-        return  browser.page_source
-        browser.close()
+    browser = webdriver.Chrome()
+    browser.get(url)
+    return browser.page_source
+    browser.close()
 
 
 def parse_page_detail(html):
@@ -58,6 +59,9 @@ def parse_page_detail(html):
         if data and 'sub_images' in data.keys():
             sub_images = data.get('sub_images')
             images = [item.get('url') for item in sub_images]
+            for image in images:
+                download_images(image)
+
             return {
                 'title': title,
                 'image': images
@@ -82,6 +86,24 @@ def main():
             html = get_page_detail(url)
             result = parse_page_detail(html)
             save_to_mongodb(result)
+
+
+def download_images(url):
+    print('正在下载：'+url)
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.content
+        return None
+    except requests.RequestException as e:
+        print('图片下载出错'+e)
+
+
+def save_images(content):
+    fielpath = {0}/{1}/{2}.format(os.getcwd(), md5(content).hexdigest, 'jpg')
+    if not os.path.exists(fielpath):
+        with open(fielpath, 'wb') as f:
+            f.write(content)
 
 
 if __name__ == '__main__':
